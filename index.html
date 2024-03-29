@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leave Management System</title>
+  <style>
+body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #3494E6, #EC6EAD);
+      /*background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS_YjDpZc4rO61uPKOc8z4FAu_EwCJ76_UTIA&usqp=CAU');*/
+      color: #333;
+      text-align: center;
+    }
+
+    header {
+      background-color: #333;
+      color: white;
+      text-align: center;
+      padding: 1em;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+   .dashboard-icon {
+    width: 150px; /* Set the desired width */
+    height: 160px; /* Maintain aspect ratio */
+    margin-bottom: 20px;
+    }
+
+    #login-form, #dashboard {
+      background-color: rgba(255, 255, 255, 0.9);
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+
+    button {
+      background-color: #333;
+      color: white;
+      padding: 10px;
+      border: none;
+      cursor: pointer;
+      margin-right: 10px;
+      border-radius: 5px;
+    }
+
+    button.logout {
+      background-color: #ff3333;
+    }
+
+    button.approve {
+      background-color: #00cc00;
+    }
+
+    button.deny {
+      background-color: #ff3333;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+
+    th {
+      background-color: #333;
+      color: white;
+    }
+
+    @media (max-width: 600px) {
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Easy Leave</h1>
+  </header>
+
+  <div class="container">
+    <img src="https://icon-library.com/images/leave-icon/leave-icon-0.jpg" alt="Dashboard Icon" class="dashboard-icon">
+    <div id="login-form">
+<h2>Login</h2>
+      <div class="form-group">
+        <label for="userType">Select User Type:</label>
+        <select id="userType">
+          <option value="employee">Employee</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="username">Username:</label>
+        <input type="text" id="username" />
+      </div>
+      <div class="form-group">
+        <label for="password">Password:</label>
+        <input type="password" id="password" />
+      </div>
+      <button onclick="login()">Login</button>
+    </div>
+
+    <div id="dashboard" style="display: none;">
+      <h2>Welcome</h2>
+
+      <!-- Display Leave Application section for employees -->
+      <div id="leave-form" style="display: none;">
+        <h3>Leave Application</h3>
+        <div class="form-group">
+          <label for="leaveType">Leave Type:</label>
+          <select id="leaveType" onchange="handleLeaveTypeChange()">
+            <option value="annual">Annual Leave</option>
+            <option value="sick">Sick Leave</option>
+            <option value="personal">Personal Leave</option>
+            <!-- Add more leave type options as needed -->
+          </select>
+        </div>
+        <div class="form-group" id="personalLeaveDetails" style="display: none;">
+          <label for="personalDetails">Personal Leave Details:</label>
+          <input type="text" id="personalDetails" placeholder="Enter details for Personal Leave" />
+        </div>
+        <div class="form-group">
+          <label for="startDate">Start Date:</label>
+          <input type="date" id="startDate" />
+        </div>
+        <div class="form-group">
+          <label for="endDate">End Date:</label>
+          <input type="date" id="endDate" />
+        </div>
+        <button onclick="submitLeave()">Submit Leave</button>
+      </div>
+
+      <!-- Leave Status and Admin Actions sections for both employees and admin -->
+      <div id="leave-status" style="display: none;">
+        <h3>Leave Status</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Leave Type</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+              <th>Details</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="leaveTableBody">
+            <!-- Leave status will be displayed here dynamically -->
+          </tbody>
+        </table>
+      </div>
+
+      <div id="admin-actions" style="display: none;">
+        <h3>Admin Actions</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Leave Type</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+              <th>Details</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="adminTableBody">
+            <!-- Admin actions (leave status) will be displayed here dynamically -->
+          </tbody>
+        </table>
+      </div>
+
+      <button class="logout" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <script>
+    
+let currentUser = null;
+    let leaves = [];
+    let adminActions = [];
+
+    function login() {
+      const userType = document.getElementById('userType').value;
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      // Dummy authentication, replace with actual backend authentication
+      if (userType === 'admin' && username === 'admin' && password === 'admin') {
+        currentUser = 'admin';
+        document.getElementById('admin-actions').style.display = 'block';
+        document.getElementById('dashboard').style.display = 'block';
+      } else if (userType === 'employee' && username === 'employee' && password === 'employee') {
+        currentUser = 'employee';
+        document.getElementById('leave-form').style.display = 'block';
+        document.getElementById('leave-status').style.display = 'block';
+        document.getElementById('dashboard').style.display = 'block';
+      } else {
+        alert('Invalid credentials. Please try again.');
+        return;
+      }
+if (currentUser === 'admin') {
+        document.getElementById('leave-form').style.display = 'none';
+      }
+
+      document.getElementById('login-form').style.display = 'none';
+      updateLeaveTables();
+    }
+    function submitLeave() {
+      const leaveType = document.getElementById('leaveType').value;
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+      let details = '';
+
+      // If leave type is 'personal', capture details from the textbox
+      if (leaveType === 'personal') {
+        details = document.getElementById('personalDetails').value;
+      }
+
+      const newLeave = {
+        leaveType,
+        startDate,
+        endDate,
+        details,
+        status: 'Pending'
+      };
+
+      leaves.push(newLeave);
+      updateLeaveTables();
+    }
+
+    function approveLeave(index) {
+      leaves[index].status = 'Approved';
+      adminActions.push({ leave: leaves[index], action: 'Approved' });
+      leaves.splice(index, 1);
+      updateLeaveTables();
+    }
+
+    function denyLeave(index) {
+      leaves[index].status = 'Denied';
+      adminActions.push({ leave: leaves[index], action: 'Denied' });
+      leaves.splice(index, 1);
+      updateLeaveTables();
+    }
+
+    function updateLeaveTables() {
+      const leaveTableBody = document.getElementById('leaveTableBody');
+      leaveTableBody.innerHTML = '';
+
+      const adminTableBody = document.getElementById('adminTableBody');
+      adminTableBody.innerHTML = '';
+
+      // ... (existing code remains unchanged) ...
+
+      if (leaves.length === 0) {
+        // ... (existing code remains unchanged) ...
+const noDataLeaveRow = document.createElement('tr');
+        const noDataLeaveCell = document.createElement('td');
+        noDataLeaveCell.colSpan = 5;
+        noDataLeaveCell.textContent = 'No leave records';
+        noDataLeaveRow.appendChild(noDataLeaveCell);
+        leaveTableBody.appendChild(noDataLeaveRow);
+       } else {
+        leaves.forEach(leave => {
+          const leaveRow = document.createElement('tr');
+          leaveRow.innerHTML = `
+            <td>${leave.leaveType}</td>
+            <td>${leave.startDate}</td>
+            <td>${leave.endDate}</td>
+            <td>${leave.details || '-'}</td>
+            <td>${leave.status}</td>
+            <td>
+              ${
+                currentUser === 'admin'
+                  ? `<button class="approve" onclick="approveLeave(${leaves.indexOf(leave)})">Approve</button>
+                     <button class="deny" onclick="denyLeave(${leaves.indexOf(leave)})">Deny</button>`
+                  : ''
+              }
+            </td>
+          `;
+          leaveTableBody.appendChild(leaveRow);
+        });
+      }
+
+      if (adminActions.length === 0) {
+    
+ const noDataAdminRow = document.createElement('tr');
+        const noDataAdminCell = document.createElement('td');
+        noDataAdminCell.colSpan = 5;
+        noDataAdminCell.textContent = 'No leave records';
+        noDataAdminRow.appendChild(noDataAdminCell);
+        adminTableBody.appendChild(noDataAdminRow);
+      } else {
+        adminActions.forEach(action => {
+          const adminRow = document.createElement('tr');
+          adminRow.innerHTML = `
+            <td>${action.leave.leaveType}</td>
+            <td>${action.leave.startDate}</td>
+            <td>${action.leave.endDate}</td>
+            <td>${action.leave.details || '-'}</td>
+            <td>${action.leave.status}</td>
+            <td>${action.action}</td>
+          `;
+          adminTableBody.appendChild(adminRow);
+        });
+      }
+    }
+
+ function approveLeave(index) {
+      leaves[index].status = 'Approved';
+      adminActions.push({ leave: leaves[index], action: 'Approved' });
+      leaves.splice(index, 1);
+      updateLeaveTables();
+    }
+
+    function denyLeave(index) {
+      leaves[index].status = 'Denied';
+      adminActions.push({ leave: leaves[index], action: 'Denied' });
+      leaves.splice(index, 1);
+      updateLeaveTables();
+    }
+
+    function logout() {
+      currentUser = null;
+      document.getElementById('dashboard').style.display = 'none';
+      document.getElementById('login-form').style.display = 'block';
+      clearForms();
+    }
+
+    function clearForms() {
+      document.getElementById('username').value = '';
+      document.getElementById('password').value = '';
+      document.getElementById('leaveType').value = 'annual';
+      document.getElementById('startDate').value = '';
+      document.getElementById('endDate').value = '';
+    }
+
+
+
+    function handleLeaveTypeChange() {
+      const leaveType = document.getElementById('leaveType').value;
+      const personalLeaveDetails = document.getElementById('personalLeaveDetails');
+
+      // Show the additional textbox for Personal Leave if selected
+      if (leaveType === 'personal') {
+        personalLeaveDetails.style.display = 'block';
+      } else {
+        personalLeaveDetails.style.display = 'none';
+      }
+    }
+  </script>
+
+</body>
+</html>
